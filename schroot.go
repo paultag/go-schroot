@@ -39,6 +39,8 @@ func getOutputLine(cmd *exec.Cmd) (string, error) {
 
 // }}}
 
+// Schroot object encapsulation. Contains lightweight amounts of state, so
+// it's advised that you pass a pointer to this around.
 type Schroot struct {
 	location string
 	name     string
@@ -46,12 +48,22 @@ type Schroot struct {
 	active   bool
 }
 
+// Close the schroot session, killing the open session from schroot. To
+// see how many you've left open because you forgot to call this method,
+// run `schroot -l --all-sessions`. To close them, run
+// `schroot -e -c session:xxxx` (where session:xxxx is the name, as seen
+// in schroot -l output)
+//
+// It's advised that you `defer` this whenever creating a new schroot.
 func (schroot *Schroot) End() error {
 	err := exec.Command("schroot", "-e", "-c", schroot.session).Run()
 	schroot.active = false
 	return err
 }
 
+// Create a os/exec.Cmd to run the command inside the schroot chroot. Keep
+// in mind that we're not currently smart enough to deal with things like
+// the enviorn in a native way, so don't get too cute.
 func (schroot *Schroot) Command(cmd string, args ...string) (*exec.Cmd, error) {
 	/* The semantics of foo(bar, baz, quix...) are so fucked up here
 	 * it's not even funny. Let's do an append and unpack that. Sorry
@@ -75,6 +87,8 @@ func (schroot *Schroot) Command(cmd string, args ...string) (*exec.Cmd, error) {
 	), nil
 }
 
+// Create a new schroot based on the chroot name. To get an idea
+// of what chroots exist on the system, run `schroot -l --all-chroots`.
 func NewSchroot(name string) (*Schroot, error) {
 	schroot := Schroot{
 		name:   name,
