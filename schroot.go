@@ -27,6 +27,8 @@ import (
 	"os/exec"
 )
 
+// {{{ Command helpers
+
 func getOutputLine(cmd *exec.Cmd) (string, error) {
 	out, err := cmd.Output()
 	if err != nil {
@@ -34,6 +36,8 @@ func getOutputLine(cmd *exec.Cmd) (string, error) {
 	}
 	return strings.Trim(string(out), " \n\t\r"), nil
 }
+
+// }}}
 
 type Schroot struct {
 	location string
