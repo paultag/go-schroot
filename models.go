@@ -23,16 +23,21 @@ type Schroot struct {
 }
 
 func (schroot *Schroot) End() error {
-	return exec.Command("schroot", "-e", "-c", schroot.session).Run()
+	err := exec.Command("schroot", "-e", "-c", schroot.session).Run()
+	schroot.active = false
+	return err
 }
 
-func (schroot *Schroot) Run(cmd string, args ...string) *exec.Cmd {
+func (schroot *Schroot) Command(cmd string, args ...string) (*exec.Cmd, error) {
 	/* The semantics of foo(bar, baz, quix...) are so fucked up here
 	 * it's not even funny. Let's do an append and unpack that. Sorry
 	 * this looks like garbage, but it's either explicitly passing the
 	 * elements into the call site, or use a foo... with nothing prefixing
 	 * it. Sooo. Yeah.
 	 *    -- PRT */
+	if !schroot.active {
+		return nil, fmt.Errorf("Error: Schroot is not online")
+	}
 	return exec.Command(
 		"schroot",
 		append(
@@ -43,16 +48,20 @@ func (schroot *Schroot) Run(cmd string, args ...string) *exec.Cmd {
 				"--",
 				cmd,
 			}, args...)...,
-	)
+	), nil
 }
 
 func NewSchroot(name string) (*Schroot, error) {
-	schroot := Schroot{}
+	schroot := Schroot{
+		name:   name,
+		active: false,
+	}
 	out, err := getOutputLine(exec.Command("schroot", "-b", "-c", name))
 	if err != nil {
 		return nil, err
 	}
 	schroot.session = out
+	schroot.active = true
 
 	out, err = getOutputLine(exec.Command(
 		"schroot", "--location",
